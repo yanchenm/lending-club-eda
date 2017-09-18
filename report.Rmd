@@ -258,8 +258,7 @@ ggplot(data = working, aes(annual_inc)) + geom_histogram(binwidth=5000) +
     xlim = c(0, quantile(working$annual_inc, probs = 0.99, na.rm = TRUE))) 
 
 ggplot(data = working, aes(annual_inc)) + geom_histogram(bins=60) +
-  scale_x_log10(breaks = c(10000, 100000), 
-                labels = c("$10 000", "$100 000")) +
+  scale_x_log10(breaks = seq(0, 250000, 50000)) +
   labs(x = "annual income") +
   coord_cartesian(
     xlim = c(quantile(working$annual_inc, probs = 0.01, na.rm = TRUE), 
