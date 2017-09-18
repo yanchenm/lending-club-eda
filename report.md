@@ -1,10 +1,5 @@
----
-title: "Lending Club EDA"
-author: "Yanchen Ma"
-output: 
- html_document:
-  keep_md: TRUE
----
+# Lending Club EDA
+Yanchen Ma  
 
 
 Lending Club Exploratory Data Analysis
@@ -24,7 +19,8 @@ Through this analysis, we hope to gain a better understanding of:
 3. How does Lending Club create loans that are favourable for investors?
 
 
-```{r, message=FALSE, warning=FALSE, packages}
+
+```r
 library(ggplot2)
 library(dplyr)
 library(stringr)
@@ -35,7 +31,6 @@ library(mapdata)
 library(reshape2)
 
 loan <- read.csv("loan.csv")
-
 ```
 
 We notice right off the bat that this dataset is very large. We cannot possibly
@@ -51,11 +46,32 @@ With this in mind, 15 variables have been selected from the larger dataset to
 base this investigation upon. They have been placed into a separate datafram for
 ease of use.
 
-```{r}
+
+```r
 working <- select(loan, addr_state, annual_inc, purpose, dti, grade, sub_grade,
                   issue_d, emp_title, home_ownership, loan_amnt, member_id,
                   term, int_rate, installment, delinq_2yrs, loan_status)
 str(working)
+```
+
+```
+## 'data.frame':	887379 obs. of  16 variables:
+##  $ addr_state    : Factor w/ 51 levels "AK","AL","AR",..: 4 11 15 5 38 4 28 5 5 44 ...
+##  $ annual_inc    : num  24000 30000 12252 49200 80000 ...
+##  $ purpose       : Factor w/ 14 levels "car","credit_card",..: 2 1 12 10 10 14 3 1 12 10 ...
+##  $ dti           : num  27.65 1 8.72 20 17.94 ...
+##  $ grade         : Factor w/ 7 levels "A","B","C","D",..: 2 3 3 3 2 1 3 5 6 2 ...
+##  $ sub_grade     : Factor w/ 35 levels "A1","A2","A3",..: 7 14 15 11 10 4 15 21 27 10 ...
+##  $ issue_d       : Factor w/ 103 levels "Apr-2008","Apr-2009",..: 22 22 22 22 22 22 22 22 22 22 ...
+##  $ emp_title     : Factor w/ 299273 levels "","'Property Manager",..: 1 224800 1 9376 282199 285977 246848 171062 1 256905 ...
+##  $ home_ownership: Factor w/ 6 levels "ANY","MORTGAGE",..: 6 6 6 6 6 6 6 6 5 6 ...
+##  $ loan_amnt     : num  5000 2500 2400 10000 3000 ...
+##  $ member_id     : int  1296599 1314167 1313524 1277178 1311748 1311441 1304742 1288686 1306957 1306721 ...
+##  $ term          : Factor w/ 2 levels " 36 months"," 60 months": 1 2 1 1 2 1 2 1 2 2 ...
+##  $ int_rate      : num  10.6 15.3 16 13.5 12.7 ...
+##  $ installment   : num  162.9 59.8 84.3 339.3 67.8 ...
+##  $ delinq_2yrs   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ loan_status   : Factor w/ 10 levels "Charged Off",..: 6 1 6 6 2 6 2 6 1 1 ...
 ```
 
 # Univariate Plots and Analysis
@@ -63,47 +79,7 @@ str(working)
 We will start by examining the number of loans given over the duration of the
 data recorded in the dataset.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-# Separate month and year from issue_d variable
-working$issue_month <- factor(str_sub(working$issue_d, 1, 3))
-working$issue_year <- strtoi(str_sub(working$issue_d, start = -4))
-
-working$issue_month <- factor(working$issue_month,
-                              levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-                              ordered = TRUE)
-
-# Group loans by year and month
-date_sorted <- working %>%
-  select(loan_amnt, issue_d, issue_month, issue_year) %>%
-  group_by(issue_year, issue_month) %>%
-  arrange(issue_year, issue_month) %>%
-  summarise(count = n(), sum = sum(loan_amnt)) %>%
-  mutate(date = paste(issue_month, issue_year, sep="-"))
-
-ggplot(data = date_sorted, 
-       aes(x = reorder(date, issue_year), y = count)) + 
-  geom_bar(stat = "identity") +
-  scale_x_discrete(breaks = c("Jul-2007", "Jul-2008", "Jul-2009", "Jul-2010",
-                              "Jul-2011", "Jul-2012", "Jul-2013", "Jul-2014",
-                              "Jul-2015"),
-                   labels = c("2007", "2008", "2009", "2010", "2011", "2012",
-                              "2013", "2014", "2015")) +
-  labs(x = "Issue Date")
-
-ggplot(data = date_sorted, 
-       aes(x = reorder(date, issue_year), y = count)) + 
-  geom_bar(stat = "identity") +
-  scale_x_discrete(breaks = c("Jul-2007", "Jul-2008", "Jul-2009", "Jul-2010",
-                              "Jul-2011", "Jul-2012", "Jul-2013", "Jul-2014",
-                              "Jul-2015"),
-                   labels = c("2007", "2008", "2009", "2010", "2011", "2012",
-                              "2013", "2014", "2015")) +
-  labs(x = "Issue Date") +
-  scale_y_log10(breaks = c(100, 1000, 10000, 100000))
-
-```
+![](report_files/figure-html/unnamed-chunk-2-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-2-2.png)<!-- -->
 
 The number of loans given out increases steadily as the years pass. Looking at 
 the second plot with a logarithmic y-axis, we can see this growth as an almost 
@@ -113,17 +89,27 @@ are many months were there are large spikes and other where there are large dips
 To see if there is any pattern in these spikes, we will look at the numbers 
 behind the visualization.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-total_by_year <- by(date_sorted$count, date_sorted$issue_year, sum)
-avg_per_month <- by(date_sorted$count, date_sorted$issue_month, mean)
+```
+## [1] Yearly totals:
+```
 
-print("Yearly totals:", quote = FALSE)
-head(total_by_year, 9)
+```
+## date_sorted$issue_year
+##   2007   2008   2009   2010   2011   2012   2013   2014   2015 
+##    603   2393   5281  12537  21721  53367 134755 235628 421094
+```
 
-print("Monthly averages:", quote = FALSE)
-head(avg_per_month, 12)
+```
+## [1] Monthly averages:
+```
 
+```
+## date_sorted$issue_month
+##       Jan       Feb       Mar       Apr       May       Jun       Jul 
+##  7853.125  6468.500  7012.750  8776.750  8491.125  7097.111 10611.000 
+##       Aug       Sep       Oct       Nov       Dec 
+##  8502.444  6910.444 12441.222  9786.778  8935.556
 ```
 
 As expected, the number of loans made is increasing rapidly throughout the
@@ -145,15 +131,7 @@ are graded for stability and risk by lenders using factors like credit history,
 collateral, likelihood of repayment, etc. We can see the distribution of the
 grades of the loans below.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-ggplot(data = working, aes(grade)) + geom_histogram(stat = "count") +
-  labs(y = "count", x = "grade")
-
-ggplot(data = working, aes(sub_grade)) + geom_histogram(stat = "count") +
-  labs(y = "count", x = "subgrade") 
-
-```
+![](report_files/figure-html/unnamed-chunk-4-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-4-2.png)<!-- -->
 
 As we can see, the distribution for both grade and subgrade is right-skewed
 with most of the loans being of grade B or C. Looking at the more detailed 
@@ -166,29 +144,29 @@ risky options.
 With this in mind, what is the risk like to investors? How many of Lending Clubs
 loans are unsuccessful?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+![](report_files/figure-html/unnamed-chunk-5-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-5-2.png)<!-- -->
 
-ggplot(data = working, aes(loan_status)) + 
-  geom_histogram(stat="count") +
-  scale_x_discrete(limits = c("Current", "Fully Paid", "Charged Off",
-                              "Late (31-120 days)", "Issued", "In Grace Period",
-                              "Late (16-30 days)", "Default"),
-                   labels = c("Current", "Fully\nPaid", "Charged\nOff",
-                              "Late\n(31-120 days)", "Issued", "In Grace\nPeriod",
-                              "Late\n(16-30 days)", "Default"))
-
-ggplot(data = working, aes(loan_status)) + 
-  geom_histogram(stat="count") +
-  scale_x_discrete(limits = c("Current", "Fully Paid", "Charged Off",
-                              "Late (31-120 days)", "Issued", "In Grace Period",
-                              "Late (16-30 days)", "Default"),
-                   labels = c("Current", "Fully\nPaid", "Charged\nOff",
-                              "Late\n(31-120 days)", "Issued", "In Grace\nPeriod",
-                              "Late\n(16-30 days)", "Default")) +
-  scale_y_log10()
-
-summary(working$loan_status)
-
+```
+##                                         Charged Off 
+##                                               45248 
+##                                             Current 
+##                                              601779 
+##                                             Default 
+##                                                1219 
+## Does not meet the credit policy. Status:Charged Off 
+##                                                 761 
+##  Does not meet the credit policy. Status:Fully Paid 
+##                                                1988 
+##                                          Fully Paid 
+##                                              207723 
+##                                     In Grace Period 
+##                                                6253 
+##                                              Issued 
+##                                                8460 
+##                                   Late (16-30 days) 
+##                                                2357 
+##                                  Late (31-120 days) 
+##                                               11591
 ```
 
 The distribution shows that the vast majority (70%) of Lending Club loans are
@@ -206,15 +184,11 @@ loans, we should look at the potential returns for the investors. Lending Club
 assigns an interest rate to each loan based on loan grade and borrower credit
 history.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+![](report_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
 
-ggplot(data = working, aes(int_rate)) + geom_histogram() +
-  geom_vline(xintercept = median(working$int_rate), color = "red") +
-  geom_vline(xintercept = mean(working$int_rate), color = "blue") +
-  labs(x = "interest rate (%)")
-
-summary(working$int_rate)
-
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    5.32    9.99   12.99   13.25   16.20   28.99
 ```
 
 The red line represents the median value and the blue line the mean. With the
@@ -227,15 +201,11 @@ almost normal between 5% and 20% with a sharp fall-off after 20%. In fact, only
 Now let's look at the actual amount of money loaned out through Lending Club
 services.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+![](report_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
 
-ggplot(data = working, aes(loan_amnt)) + geom_histogram() +
-  labs(x = "loan amount ($)") + 
-  geom_vline(xintercept = median(working$loan_amnt), color = "red") +
-  geom_vline(xintercept = mean(working$loan_amnt), color = "blue")
-
-summary(working$loan_amnt)
-
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##     500    8000   13000   14760   20000   35000
 ```
 
 We notice from this plot the distinct peaks at "nice" amounts like \$10 000, 
@@ -249,25 +219,11 @@ cap on maximum loans allowed to be given out of \$35 000.
 With these loan amounts in mind, we will now examine the annual income of loan
 applicants.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+![](report_files/figure-html/unnamed-chunk-8-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-8-2.png)<!-- -->
 
-ggplot(data = working, aes(annual_inc)) + geom_histogram(binwidth=5000) +
-  geom_vline(xintercept = median(working$annual_inc, na.rm=TRUE), color = "red") +
-  geom_vline(xintercept = mean(working$annual_inc, na.rm=TRUE), color = "blue") +
-  labs(x = "annual income ($)") +
-  coord_cartesian(
-    xlim = c(0, quantile(working$annual_inc, probs = 0.99, na.rm = TRUE))) 
-
-ggplot(data = working, aes(annual_inc)) + geom_histogram(bins=60) +
-  scale_x_log10(breaks = c(10000, 100000), 
-                labels = c("$10 000", "$100 000")) +
-  labs(x = "annual income") +
-  coord_cartesian(
-    xlim = c(quantile(working$annual_inc, probs = 0.01, na.rm = TRUE), 
-             quantile(working$annual_inc, probs = 0.99, na.rm = TRUE)))
-
-summary(working$annual_inc)
-
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##       0   45000   65000   75030   90000 9500000       4
 ```
 
 Once again, the red line represents the median and the blue, the mean. 
@@ -288,8 +244,8 @@ the applicant's employer. Therefore, for the sake of consistency for this plot,
 only entries after the change are considered. This reduces the size of our
 sample by more than 75%.
 
-```{r message=FALSE, warning=FALSE}
 
+```r
 # Select only data from after September 2013
 after_sep_2013 <- subset(working, !is.na(emp_title)) %>%
   select(emp_title, issue_month, issue_year) %>%
@@ -298,21 +254,9 @@ after_sep_2013 <- subset(working, !is.na(emp_title)) %>%
   group_by(emp_title) %>%
   summarise(n = n()) %>%
   arrange(desc(n))
-
 ```
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-job_titles <- after_sep_2013[2:11,]
-job_titles$emp_title <- reorder(job_titles$emp_title, -job_titles$n)
-
-ggplot(data = job_titles, aes(x = emp_title, y = n)) + 
-  geom_bar(stat="identity") +
-  labs(x = "job title", y = "count") +
-  scale_x_discrete(labels =
-    c("Teacher", "Manager", "Registered\nNurse", "Owner", "RN", 
-      "Supervisor", "Sales", "Project\nManager", "Driver", "Office\nManager"))
-
-```
+![](report_files/figure-html/unnamed-chunk-10-1.png)<!-- -->
 
 From this chart it appears that teachers and managers are by far the most common
 applicants for loans from Lending Club. There doesn't seem to be any real 
@@ -324,23 +268,7 @@ be due to the earlier discussed discrepancy and smaller sample size, but we
 should look at how the applicants used their loans to see if there isn't another
 factor at play.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-purpose <- subset(working, !is.na(purpose)) %>%
-  select(purpose) %>%
-  group_by(purpose) %>%
-  summarise(n = n()) %>%
-  arrange(desc(n))
-
-purpose$purpose <- reorder(purpose$purpose, -purpose$n)
-
-ggplot(data = purpose[1:10,], aes(x = purpose, y = n)) + 
-  geom_bar(stat="identity") +
-  scale_x_discrete(labels = 
-    c("debt\nconsolidation", "credit\ncard", "home\nimprovement", "other",
-      "major\npurchase", "small\nbusiness", "car", "medical", "vacation", "house"))
-
-```
+![](report_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
 
 It would seem that the vast majority of loan applicants applied for the purpose 
 of debt consolidation, with a smaller, but still significant number for credit 
@@ -360,51 +288,7 @@ We'll start by examining the geography of borrowers. (It's expected that there
 won't be much learned about the data through this, but I wanted a chance to
 explore the mapping packages offered in R.)
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-# Map code adapted from http://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html
-# Population data taken from https://raw.githubusercontent.com/BuzzFeedNews/2015-11-refugees-in-the-united-states/master/data/census-state-populations.csv
-
-states <- map_data("state")
-state_pop <- read.csv("census-state-populations.csv")
-colnames(state_pop) <- c("addr_state", "population")
-
-state_data <- working %>%
-  select(addr_state, loan_amnt) %>%
-  group_by(addr_state) %>%
-  summarise(count = n(), total = sum(loan_amnt))
-
-state_data$addr_state <- state.name[match(state_data$addr_state, state.abb)]
-state_data <- merge(state_data, state_pop, by = "addr_state")
-state_data$addr_state <- tolower(state_data$addr_state)
-colnames(state_data) <- c("region", "count", "total", "population")
-state_data <- inner_join(states, state_data, by = "region")
-
-# Remove axes but leave legend
-ditch_the_axes <- theme(
-  axis.text = element_blank(),
-  axis.line = element_blank(),
-  axis.ticks = element_blank(),
-  panel.border = element_blank(),
-  panel.grid = element_blank(),
-  axis.title = element_blank())
-
-ggplot(data = state_data) +
-  geom_polygon(aes(x = long, y = lat, fill = total, group = group), 
-               color = "black") +
-  coord_fixed(1.3) +
-  theme_bw() +
-  ditch_the_axes +
-  scale_fill_gradient(trans = "sqrt")
-
-ggplot(data = state_data) +
-  geom_polygon(aes(x = long, y = lat, fill = total / population, group = group), 
-               color = "black") +
-  coord_fixed(1.3) +
-  theme_bw() +
-  ditch_the_axes
-
-```
+![](report_files/figure-html/unnamed-chunk-12-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-12-2.png)<!-- -->
 
 It seems from this map that the highest loan amounts come from the states of
 California, New York, and Texas. This is to be expected as these are also the
@@ -425,41 +309,7 @@ We start by noting that Lending Club loans are offered in two different lengths
 of terms, 36 months or 60 months. Let's examine these two types of loans
 and how they differ.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-ggplot(data = working, aes(x = term, y = int_rate)) +
-  geom_boxplot() +
-  labs(y = "interest rate (%)")
-
-ggplot(data = working, aes(x = term, y = loan_amnt)) +
-  geom_boxplot() +
-  labs(y = "loan amount ($)")
-
-# Function to determine percentage breakdowns of var1 within each
-# value of var2
-
-percent_breakdown <- function(data, var1, var2) {
-  
-  sum_by <- data %>%
-    select_(var1, var2) %>%
-    group_by_(var2, var1) %>%
-    summarise(count = n())
-  
-  count_by <- by(sum_by$count, sum_by[[var2]], sum)
-
-  count_by<- sapply(count_by, I)
-
-  count_by <- data.frame(levels(sum_by[[var2]]), count_by)
-
-  colnames(count_by) <- c(var2, "total")
-
-  breakdown <- merge(sum_by, count_by, by = var2)
-  breakdown$percentage <- breakdown$count / breakdown$total
-  
-  return(breakdown)
-}
-
-```
+![](report_files/figure-html/unnamed-chunk-13-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-13-2.png)<!-- -->
 
 We see immediately that loans with 60-month terms have on average almost 4% 
 higher interest than their shorter term counterparts. Continuing to plot versus
@@ -469,34 +319,14 @@ double the amount taken in 36-month loans. Is the higher interest rate for
 longer loans a result of the loan simply being longer or because the loans are
 larger (and thus riskier)?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-term_grade_breakdown <- percent_breakdown(working, "term", "grade")
-
-ggplot(data = term_grade_breakdown, aes(x = grade, y = percentage)) +
-  geom_bar(stat = "identity", aes(fill = term)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.25),
-                     labels = c("0%", "25%", "50%", "75%", "100%")) +
-  labs(y = "percentage of loans")
-
-```
+![](report_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 This plot makes it clear that the lower the grade, the higher the proportion of
 loans that are of longer length. The difference is extremely evident with 
 only 3.5% of grade A loans having a 60-month term but 87.5% of grade G loans
 having the same term.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-grade_term_breakdown <- percent_breakdown(working, "grade", "term")
-
-ggplot(data = grade_term_breakdown, aes(x = term, y = percentage)) +
-  geom_bar(stat = "identity", aes(fill = grade)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.25),
-                     labels = c("0%", "25%", "50%", "75%", "100%")) +
-  labs(y = "percentage of loans")
-
-```
+![](report_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 Reversing the breakdown and instead plotting the percentage breakdown of each 
 length of term by grade reveals similar information. 36-month loans are composed
@@ -511,20 +341,7 @@ longer length of the loan and the much higher average value of the longer loans.
 Is it really true though? Are 60-month loans more likely than their shorter 
 counterparts to default or be charged off?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-term_status_breakdown <- percent_breakdown(
-  subset(working, !(loan_status %in% c("Does not meet the credit policy. Status:Charged Off",
-                              "Does not meet the credit policy. Status:Fully Paid"))),
-  "loan_status", "term")
-
-ggplot(data = term_status_breakdown, aes(x = term, y = percentage)) +
-  geom_bar(stat = "identity", aes(fill = loan_status)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.25),
-                     labels = c("0%", "25%", "50%", "75%", "100%")) +
-  labs(y = "percentage of loans")
-
-```
+![](report_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 From this breakdown, we can see that the longer term loans don't necessary carry 
 a higher risk for investors in terms of defaults and charge-offs. There are 
@@ -543,28 +360,7 @@ In addition to the length of the term, let's examine what other factors go into
 the determination of a loan's conditions. Let's start by looking at what kind
 of factors could affect a particular loan's interest rate.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-ggplot(data = working, aes(x = annual_inc, y = int_rate)) +
-  geom_point(alpha = 0.01, position="jitter") +
-  coord_cartesian(
-    xlim = c(quantile(working$annual_inc, probs = 0.01, na.rm = TRUE), 
-             quantile(working$annual_inc, probs = 0.99, na.rm = TRUE))) +
-  labs(x = "annual income ($)", y = "interest rate (%)")
-
-ggplot(data = working, aes(x = dti, y = int_rate)) +
-  geom_point(alpha = 0.01, position="jitter") +
-  coord_cartesian(
-    xlim = c(quantile(working$dti, probs = 0.01, na.rm = TRUE), 
-             quantile(working$dti, probs = 0.99, na.rm = TRUE))) +
-  labs(x = "debt-to-income ratio", y = "interest rate (%)")
-
-ggplot(data = working, aes(x = delinq_2yrs, y = int_rate)) +
-  geom_point(alpha = 0.01, position="jitter") +
-  coord_cartesian(xlim = c(0, 4)) +
-  labs(x = "delinquencies (last 2 years)", y = "interest rate (%)")
-
-```
+![](report_files/figure-html/unnamed-chunk-17-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-17-2.png)<!-- -->![](report_files/figure-html/unnamed-chunk-17-3.png)<!-- -->
 
 These plots seem to show that none of the three indicators I believed would be 
 telling about how interest rates are determined have any relationship with the
@@ -580,13 +376,7 @@ What else other than how much someone makes, how much they borrow, and how many
 times they've previously failed to repay a loan could indicate the risk of 
 a borrower not paying back a loan?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-ggplot(data = working, aes(x = grade, y = int_rate)) +
-  geom_boxplot() +
-  labs(y = "interest rate (%)")
-
-```
+![](report_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 This plot shows us that the interest rate seems to be directly pegged to the 
 grade rating of the loan. There is very little overlap between the ranges of
@@ -600,27 +390,7 @@ loan classification process. It appears the some of the factors examined earlier
 classifying the grade of each loan. With that in mind, perhaps we should look
 at those same factors and how they vary between each grade.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-ggplot(data = working, aes(x = grade, y = annual_inc)) +
-  geom_boxplot() +
-  coord_cartesian(
-    ylim = c(quantile(working$annual_inc, probs = 0.01, na.rm = TRUE), 
-             quantile(working$annual_inc, probs = 0.99, na.rm = TRUE))) +
-  labs(y = "annual income ($)")
-
-ggplot(data = working, aes(x = grade, y = dti)) +
-  geom_boxplot() +
-  coord_cartesian(
-    ylim = c(quantile(working$dti, probs = 0.01, na.rm = TRUE), 
-             quantile(working$dti, probs = 0.99, na.rm = TRUE))) +
-  labs(y = "debt-to-income ratio")
-
-ggplot(data = working, aes(x = grade, y = loan_amnt)) +
-  geom_boxplot() +
-  labs(y = "loan amount ($)")
-
-```
+![](report_files/figure-html/unnamed-chunk-19-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-19-2.png)<!-- -->![](report_files/figure-html/unnamed-chunk-19-3.png)<!-- -->
 
 There does appear to be a 
 dip in annual income as the grades lower, however they rise again approaching the
@@ -640,20 +410,7 @@ values and the actual risk rating.
 What about the actual classification though? How accurate is the grade rating 
 at predicting the success rate of the loan?
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-status_grade_breakdown <- percent_breakdown(
-  subset(working, !(loan_status %in% c("Does not meet the credit policy. Status:Charged Off",
-                              "Does not meet the credit policy. Status:Fully Paid"))), 
-  "loan_status", "grade")
-
-ggplot(data = status_grade_breakdown, aes(x = grade, y = percentage)) +
-  geom_bar(stat = "identity", aes(fill = loan_status)) +
-  scale_y_continuous(breaks = seq(0, 1, 0.25),
-                     labels = c("0%", "25%", "50%", "75%", "100%")) +
-  labs(y = "percentage of loans")
-
-```
+![](report_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
 
 It seems pretty apparent that grade is in fact at least somewhat indicative
 of a loan's risk. We can see the very steady increase in proportion of loans
@@ -667,30 +424,13 @@ risk of loans.
 Let's turn our attention now away from risk assessment of the loans and onto
 what these loans are used for.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-purpose_grade_breakdown <- percent_breakdown(working, "purpose", "grade")
-ggplot(data = purpose_grade_breakdown, aes(x = grade, y = percentage)) +
-  geom_bar(stat = "identity", aes(fill = purpose))
-
-```
+![](report_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 There are a few standout relationships we can draw from this figure. We can see
 that the higher grade loans have a higher proportion of credit card loans and
 a lower proportion of loans classified under "small business" and "other".
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-ggplot(data = working, aes(x = purpose, y = annual_inc)) +
-  geom_boxplot() +
-  coord_cartesian(ylim = c(0, quantile(working$annual_inc, probs = 0.99, na.rm = TRUE))) +
-  labs(y = "annual income ($)") +
-  scale_x_discrete(
-    labels = c("car", "credit\ncard", "debt\nconsol.", "edu.",
-               "home\nimprov.", "house", "major\npurchase", "med.", "moving",
-               "other", "ren.\nenergy", "small\nbus.", "vacation", "wed."))
-
-```
+![](report_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 The most interesting revelation to come out of this plot is that loans given for
 the declared purpose of education have a median borrower income almost $25 000 
@@ -702,11 +442,7 @@ of the nature of the purpose of these loans.
 
 # Multivariate Plots and Analysis
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-
-
-```
 
 ------
 
@@ -721,25 +457,19 @@ units), and good aesthetic choices (e.g. color, transparency). After each plot,
 make sure you justify why you chose each plot by describing what it shows.
 
 ### Plot One
-```{r echo=FALSE, Plot_One}
 
-```
 
 ### Description One
 
 
 ### Plot Two
-```{r echo=FALSE, Plot_Two}
 
-```
 
 ### Description Two
 
 
 ### Plot Three
-```{r echo=FALSE, Plot_Three}
 
-```
 
 ### Description Three
 
