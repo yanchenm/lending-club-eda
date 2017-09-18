@@ -1,6 +1,4 @@
 ---
-title: "Lending Club EDA"
-author: "Yanchen Ma"
 output: 
  html_document:
   keep_md: TRUE
@@ -19,6 +17,7 @@ that contains loan data for almost 900 000 loans handled by Lending Club between
 description, interest rate, loan status, and many more. 
 
 Through this analysis, we hope to gain a better understanding of:
+
 1. What types of loans Lending Club are making?
 2. What types of people take out these loans?
 3. How does Lending Club create loans that are favourable for investors?
@@ -349,7 +348,7 @@ most common purposes are also the same ones advertised right on the front page
 of Lending Club's website and are probably the most common sources of debt in
 the US.
 
-# Bivariate Plots and Analysis
+# Multivariate Plots and Analysis
 
 While looking at the variables in the dataset individually has given us
 important insights into the data, we can't really go about understanding what
@@ -435,6 +434,23 @@ ggplot(data = working, aes(x = term, y = loan_amnt)) +
   geom_boxplot() +
   labs(y = "loan amount ($)")
 
+```
+
+We see immediately that loans with 60-month terms have on average almost 4% 
+higher interest than their shorter term counterparts. Continuing to plot versus
+term, we find also that the longer terms are associated with significantly 
+larger loan amounts as well. The median loan amount for 60 months is almost
+double the amount taken in 36-month loans.
+
+Let's look next at the grade classification of these loans. How does Lending Club
+rate the risk of loans of differing lengths? To do this, we need to create a 
+stacked bar plot showing the proportion of loans of each grade that are of each 
+loan length. We start by creating a function that will calculate the proportion
+that each term-length of loan takes up in each grade. This function can then be 
+used later on to create other stacked proportion bars.
+
+```{r}
+
 # Function to determine percentage breakdowns of var1 within each
 # value of var2
 
@@ -461,13 +477,7 @@ percent_breakdown <- function(data, var1, var2) {
 
 ```
 
-We see immediately that loans with 60-month terms have on average almost 4% 
-higher interest than their shorter term counterparts. Continuing to plot versus
-term, we find also that the longer terms are associated with significantly 
-larger loan amounts as well. The median loan amount for 60 months is almost
-double the amount taken in 36-month loans. Is the higher interest rate for 
-longer loans a result of the loan simply being longer or because the loans are
-larger (and thus riskier)?
+With the percentage breakdowns calculated, we can now plot.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -700,57 +710,97 @@ other hand, we can see that loans made for the purpose of small business and
 home improvement have a slightly above average annual income, one again reflective
 of the nature of the purpose of these loans.
 
-# Multivariate Plots and Analysis
+# Final Plots and Summary
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
+loan_status_count <- working %>%
+  select(loan_status) %>%
+  group_by(loan_status) %>%
+  summarise(count = n()) %>%
+  mutate(percentage = count / 887379)
 
+ggplot(data = loan_status_count, aes(x = loan_status, y = count)) + 
+  geom_bar(stat="identity", aes(fill = loan_status)) +
+  scale_x_discrete(limits = c("Current", "Fully Paid", "Charged Off",
+                              "Late (31-120 days)", "Issued", "In Grace Period",
+                              "Late (16-30 days)", "Default"),
+                   labels = c("Current", "Fully\nPaid", "Charged\nOff",
+                              "Late\n(31-120 days)", "Issued", "In Grace\nPeriod",
+                              "Late\n(16-30 days)", "Default")) +
+  scale_y_continuous(breaks = seq(0, 600000, 100000),
+                     labels = c("0", "100000", "200000", "300000", "400000",
+                                "500000", "600000")) +
+  labs(title = "Lending Club Current Loan Status Breakdown", 
+       x = "Loan status", y = "Number of Loans") +
+  guides(fill = FALSE) +
+  geom_text(aes(label = scales::percent(percentage),
+                   y= percentage ), stat= "identity", vjust = -0.75)
 
 ```
 
-------
+The above figure shows the current spread of loan statuses at Lending Club. Most
+loans seem to be current and up-to-date on payments, followed by complete and
+fully paid loans. Around 1/20 of loans are charged off.
 
-# Final Plots and Summary
+***
 
-> **Tip**: You've done a lot of exploration and have built up an understanding
-of the structure of and relationships between the variables in your dataset.
-Here, you will select three plots from all of your previous exploration to
-present here as a summary of some of your most interesting findings. Make sure
-that you have refined your selected plots for good titling, axis labels (with
-units), and good aesthetic choices (e.g. color, transparency). After each plot,
-make sure you justify why you chose each plot by describing what it shows.
-
-### Plot One
-```{r echo=FALSE, Plot_One}
-
-```
-
-### Description One
-
-
-### Plot Two
 ```{r echo=FALSE, Plot_Two}
 
+ggplot(data = working, aes(x = grade, y = int_rate)) +
+  geom_boxplot(aes(fill = grade)) +
+  labs(title = "Lending Club Interest Rate Ranges",
+       x = "Loan grade", y = "Interest rate (%)") +
+  guides(fill = FALSE)
+
 ```
 
-### Description Two
+It appears that Lending Club interest rates are assigned based upon the loan
+grade classification given to each loan.
 
+***
 
-### Plot Three
 ```{r echo=FALSE, Plot_Three}
 
+ggplot(data = status_grade_breakdown, aes(x = grade, y = percentage)) +
+  geom_bar(stat = "identity", aes(fill = loan_status)) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25),
+                     labels = c("0%", "25%", "50%", "75%", "100%")) +
+  labs(title = "Lending Club Loan Status Breakdown by Grade",
+       x = "Loan grade", y = "Percentage of loans")
+
 ```
 
-### Description Three
+Lower grade loans are more commonly charged off or late than higher grade ones.
 
 ------
 
 # Reflection
 
-> **Tip**: Here's the final step! Reflect on the exploration you performed and
-the insights you found. What were some of the struggles that you went through?
-What went well? What was surprising? Make sure you include an insight into
-future work that could be done with the dataset.
+I have discovered a great deal from the initial exploratory data analysis on the
+Lending Club dataset. We've looked at the relationships between 15 different 
+variables to see what we can learn about Lending Club -- their growth, their
+loans, their customers.
 
-> **Tip**: Don't forget to remove this, and the other **Tip** sections before
-saving your final work and knitting the final report!
+We've examined the characteristics of Lending Club's customer base and the 
+characterics of the loans they facilitate. We've looked at the factors that 
+potentially go into the determination and classification of risk for a loan and
+how those factors correlate with a loan's status and chance of repayment.
+
+There are however, many answers left to be uncovered and many questions left to
+be asked. The scale of the dataset is so massive that any such analysis can only
+focus on a small subset of the available data. Questions that we have been 
+unable to answer in theis exploration, such as what factors really go into the
+risk assessment and classification of loans, may become evident had more 
+variables been considered (such as total number of credit lines, collateral 
+amounts, etc.). Perhaps we chose the right ones in this exploration.
+
+Additionally, and importantly, a crucial variable to this investigation was
+missing from the dataset. The documentation indicates that there should be a
+variable storing the FICO credit score information for each borrower. By all 
+indications -- the Lending Club website, how loans are generally given -- this
+is perhaps the most important variable in determining the terms of any loan. 
+Since we found no significant relationship between any of the main factors in 
+determining a loan's risk and the actual assessment of said risk made by
+Lending Club, credit score is perhaps the primary assessment factor. Without
+this variable, our exploration can never be truly complete.

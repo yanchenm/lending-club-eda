@@ -1,5 +1,3 @@
-# Lending Club EDA
-Yanchen Ma  
 
 
 Lending Club Exploratory Data Analysis
@@ -14,6 +12,7 @@ that contains loan data for almost 900 000 loans handled by Lending Club between
 description, interest rate, loan status, and many more. 
 
 Through this analysis, we hope to gain a better understanding of:
+
 1. What types of loans Lending Club are making?
 2. What types of people take out these loans?
 3. How does Lending Club create loans that are favourable for investors?
@@ -277,7 +276,7 @@ most common purposes are also the same ones advertised right on the front page
 of Lending Club's website and are probably the most common sources of debt in
 the US.
 
-# Bivariate Plots and Analysis
+# Multivariate Plots and Analysis
 
 While looking at the variables in the dataset individually has given us
 important insights into the data, we can't really go about understanding what
@@ -315,18 +314,52 @@ We see immediately that loans with 60-month terms have on average almost 4%
 higher interest than their shorter term counterparts. Continuing to plot versus
 term, we find also that the longer terms are associated with significantly 
 larger loan amounts as well. The median loan amount for 60 months is almost
-double the amount taken in 36-month loans. Is the higher interest rate for 
-longer loans a result of the loan simply being longer or because the loans are
-larger (and thus riskier)?
+double the amount taken in 36-month loans.
 
-![](report_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+Let's look next at the grade classification of these loans. How does Lending Club
+rate the risk of loans of differing lengths? To do this, we need to create a 
+stacked bar plot showing the proportion of loans of each grade that are of each 
+loan length. We start by creating a function that will calculate the proportion
+that each term-length of loan takes up in each grade. This function can then be 
+used later on to create other stacked proportion bars.
+
+
+```r
+# Function to determine percentage breakdowns of var1 within each
+# value of var2
+
+percent_breakdown <- function(data, var1, var2) {
+  
+  sum_by <- data %>%
+    select_(var1, var2) %>%
+    group_by_(var2, var1) %>%
+    summarise(count = n())
+  
+  count_by <- by(sum_by$count, sum_by[[var2]], sum)
+
+  count_by<- sapply(count_by, I)
+
+  count_by <- data.frame(levels(sum_by[[var2]]), count_by)
+
+  colnames(count_by) <- c(var2, "total")
+
+  breakdown <- merge(sum_by, count_by, by = var2)
+  breakdown$percentage <- breakdown$count / breakdown$total
+  
+  return(breakdown)
+}
+```
+
+With the percentage breakdowns calculated, we can now plot.
+
+![](report_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 This plot makes it clear that the lower the grade, the higher the proportion of
 loans that are of longer length. The difference is extremely evident with 
 only 3.5% of grade A loans having a 60-month term but 87.5% of grade G loans
 having the same term.
 
-![](report_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 Reversing the breakdown and instead plotting the percentage breakdown of each 
 length of term by grade reveals similar information. 36-month loans are composed
@@ -341,7 +374,7 @@ longer length of the loan and the much higher average value of the longer loans.
 Is it really true though? Are 60-month loans more likely than their shorter 
 counterparts to default or be charged off?
 
-![](report_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 From this breakdown, we can see that the longer term loans don't necessary carry 
 a higher risk for investors in terms of defaults and charge-offs. There are 
@@ -360,7 +393,7 @@ In addition to the length of the term, let's examine what other factors go into
 the determination of a loan's conditions. Let's start by looking at what kind
 of factors could affect a particular loan's interest rate.
 
-![](report_files/figure-html/unnamed-chunk-17-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-17-2.png)<!-- -->![](report_files/figure-html/unnamed-chunk-17-3.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-18-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-18-2.png)<!-- -->![](report_files/figure-html/unnamed-chunk-18-3.png)<!-- -->
 
 These plots seem to show that none of the three indicators I believed would be 
 telling about how interest rates are determined have any relationship with the
@@ -376,7 +409,7 @@ What else other than how much someone makes, how much they borrow, and how many
 times they've previously failed to repay a loan could indicate the risk of 
 a borrower not paying back a loan?
 
-![](report_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 This plot shows us that the interest rate seems to be directly pegged to the 
 grade rating of the loan. There is very little overlap between the ranges of
@@ -390,7 +423,7 @@ loan classification process. It appears the some of the factors examined earlier
 classifying the grade of each loan. With that in mind, perhaps we should look
 at those same factors and how they vary between each grade.
 
-![](report_files/figure-html/unnamed-chunk-19-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-19-2.png)<!-- -->![](report_files/figure-html/unnamed-chunk-19-3.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](report_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](report_files/figure-html/unnamed-chunk-20-3.png)<!-- -->
 
 There does appear to be a 
 dip in annual income as the grades lower, however they rise again approaching the
@@ -410,7 +443,7 @@ values and the actual risk rating.
 What about the actual classification though? How accurate is the grade rating 
 at predicting the success rate of the loan?
 
-![](report_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 It seems pretty apparent that grade is in fact at least somewhat indicative
 of a loan's risk. We can see the very steady increase in proportion of loans
@@ -424,13 +457,13 @@ risk of loans.
 Let's turn our attention now away from risk assessment of the loans and onto
 what these loans are used for.
 
-![](report_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 There are a few standout relationships we can draw from this figure. We can see
 that the higher grade loans have a higher proportion of credit card loans and
 a lower proportion of loans classified under "small business" and "other".
 
-![](report_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](report_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 The most interesting revelation to come out of this plot is that loans given for
 the declared purpose of education have a median borrower income almost $25 000 
@@ -440,47 +473,55 @@ other hand, we can see that loans made for the purpose of small business and
 home improvement have a slightly above average annual income, one again reflective
 of the nature of the purpose of these loans.
 
-# Multivariate Plots and Analysis
-
-
-
-------
-
 # Final Plots and Summary
 
-> **Tip**: You've done a lot of exploration and have built up an understanding
-of the structure of and relationships between the variables in your dataset.
-Here, you will select three plots from all of your previous exploration to
-present here as a summary of some of your most interesting findings. Make sure
-that you have refined your selected plots for good titling, axis labels (with
-units), and good aesthetic choices (e.g. color, transparency). After each plot,
-make sure you justify why you chose each plot by describing what it shows.
+![](report_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
 
-### Plot One
+The above figure shows the current spread of loan statuses at Lending Club. Most
+loans seem to be current and up-to-date on payments, followed by complete and
+fully paid loans. Around 1/20 of loans are charged off.
 
+***
 
-### Description One
+![](report_files/figure-html/Plot_Two-1.png)<!-- -->
 
+It appears that Lending Club interest rates are assigned based upon the loan
+grade classification given to each loan.
 
-### Plot Two
+***
 
+![](report_files/figure-html/Plot_Three-1.png)<!-- -->
 
-### Description Two
-
-
-### Plot Three
-
-
-### Description Three
+Lower grade loans are more commonly charged off or late than higher grade ones.
 
 ------
 
 # Reflection
 
-> **Tip**: Here's the final step! Reflect on the exploration you performed and
-the insights you found. What were some of the struggles that you went through?
-What went well? What was surprising? Make sure you include an insight into
-future work that could be done with the dataset.
+I have discovered a great deal from the initial exploratory data analysis on the
+Lending Club dataset. We've looked at the relationships between 15 different 
+variables to see what we can learn about Lending Club -- their growth, their
+loans, their customers.
 
-> **Tip**: Don't forget to remove this, and the other **Tip** sections before
-saving your final work and knitting the final report!
+We've examined the characteristics of Lending Club's customer base and the 
+characterics of the loans they facilitate. We've looked at the factors that 
+potentially go into the determination and classification of risk for a loan and
+how those factors correlate with a loan's status and chance of repayment.
+
+There are however, many answers left to be uncovered and many questions left to
+be asked. The scale of the dataset is so massive that any such analysis can only
+focus on a small subset of the available data. Questions that we have been 
+unable to answer in theis exploration, such as what factors really go into the
+risk assessment and classification of loans, may become evident had more 
+variables been considered (such as total number of credit lines, collateral 
+amounts, etc.). Perhaps we chose the right ones in this exploration.
+
+Additionally, and importantly, a crucial variable to this investigation was
+missing from the dataset. The documentation indicates that there should be a
+variable storing the FICO credit score information for each borrower. By all 
+indications -- the Lending Club website, how loans are generally given -- this
+is perhaps the most important variable in determining the terms of any loan. 
+Since we found no significant relationship between any of the main factors in 
+determining a loan's risk and the actual assessment of said risk made by
+Lending Club, credit score is perhaps the primary assessment factor. Without
+this variable, our exploration can never be truly complete.
