@@ -19,18 +19,7 @@ Through this analysis, we hope to gain a better understanding of:
 
 
 
-```r
-library(ggplot2)
-library(dplyr)
-library(stringr)
-library(gridExtra)
-library(ggmap)
-library(maps)
-library(mapdata)
-library(reshape2)
-
-loan <- read.csv("loan.csv")
-```
+***
 
 We notice right off the bat that this dataset is very large. We cannot possibly
 examine every variable in this analysis. Returning to our primary aims, we can
@@ -50,6 +39,10 @@ ease of use.
 working <- select(loan, addr_state, annual_inc, purpose, dti, grade, sub_grade,
                   issue_d, emp_title, home_ownership, loan_amnt, member_id,
                   term, int_rate, installment, delinq_2yrs, loan_status)
+
+working$grade <- factor(working$grade, 
+                        c("A", "B", "C", "D", "E", "F", "G"), ordered=TRUE)
+
 str(working)
 ```
 
@@ -59,7 +52,7 @@ str(working)
 ##  $ annual_inc    : num  24000 30000 12252 49200 80000 ...
 ##  $ purpose       : Factor w/ 14 levels "car","credit_card",..: 2 1 12 10 10 14 3 1 12 10 ...
 ##  $ dti           : num  27.65 1 8.72 20 17.94 ...
-##  $ grade         : Factor w/ 7 levels "A","B","C","D",..: 2 3 3 3 2 1 3 5 6 2 ...
+##  $ grade         : Ord.factor w/ 7 levels "A"<"B"<"C"<"D"<..: 2 3 3 3 2 1 3 5 6 2 ...
 ##  $ sub_grade     : Factor w/ 35 levels "A1","A2","A3",..: 7 14 15 11 10 4 15 21 27 10 ...
 ##  $ issue_d       : Factor w/ 103 levels "Apr-2008","Apr-2009",..: 22 22 22 22 22 22 22 22 22 22 ...
 ##  $ emp_title     : Factor w/ 299273 levels "","'Property Manager",..: 1 224800 1 9376 282199 285977 246848 171062 1 256905 ...

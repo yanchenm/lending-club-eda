@@ -23,7 +23,7 @@ Through this analysis, we hope to gain a better understanding of:
 3. How does Lending Club create loans that are favourable for investors?
 
 
-```{r, message=FALSE, warning=FALSE, packages}
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
 library(ggplot2)
 library(dplyr)
 library(stringr)
@@ -36,6 +36,7 @@ library(reshape2)
 loan <- read.csv("loan.csv")
 
 ```
+***
 
 We notice right off the bat that this dataset is very large. We cannot possibly
 examine every variable in this analysis. Returning to our primary aims, we can
@@ -54,6 +55,10 @@ ease of use.
 working <- select(loan, addr_state, annual_inc, purpose, dti, grade, sub_grade,
                   issue_d, emp_title, home_ownership, loan_amnt, member_id,
                   term, int_rate, installment, delinq_2yrs, loan_status)
+
+working$grade <- factor(working$grade, 
+                        c("A", "B", "C", "D", "E", "F", "G"), ordered=TRUE)
+
 str(working)
 ```
 
@@ -393,14 +398,15 @@ ggplot(data = state_data) +
   coord_fixed(1.3) +
   theme_bw() +
   ditch_the_axes +
-  scale_fill_gradient(trans = "sqrt")
+  scale_fill_distiller("total loans ($)", trans = "reverse")
 
 ggplot(data = state_data) +
   geom_polygon(aes(x = long, y = lat, fill = total / population, group = group), 
                color = "black") +
   coord_fixed(1.3) +
   theme_bw() +
-  ditch_the_axes
+  ditch_the_axes +
+  scale_fill_distiller(trans = "reverse")
 
 ```
 
@@ -503,7 +509,8 @@ ggplot(data = grade_term_breakdown, aes(x = term, y = percentage)) +
   geom_bar(stat = "identity", aes(fill = grade)) +
   scale_y_continuous(breaks = seq(0, 1, 0.25),
                      labels = c("0%", "25%", "50%", "75%", "100%")) +
-  labs(y = "percentage of loans")
+  labs(y = "percentage of loans") +
+  scale_fill_brewer()
 
 ```
 
